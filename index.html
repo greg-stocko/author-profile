@@ -57,7 +57,7 @@ button{font-family:inherit}
 .btn-blue{background:var(--blue);border-color:var(--blue);color:#fff}
 .btn-blue:hover{background:var(--blue-dark)}
 .pub-menu{display:none;border:0;background:none;color:var(--ink);padding:4px;cursor:pointer}
-/* ---------- App shell ---------- */
+/* ---------- Logged-in shell ---------- */
 .app{display:flex;min-height:900px}
 .rail{position:sticky;top:var(--pbar,0px);align-self:flex-start;height:calc(100vh - var(--pbar,0px));z-index:6;width:72px;flex:none;background:#232A38;color:#C4CBDA;display:flex;flex-direction:column;align-items:center;padding-top:8px}
 .rail a{width:72px;padding:10px 0;display:flex;flex-direction:column;align-items:center;gap:3px;color:#C4CBDA;font-size:10px;font-weight:700;letter-spacing:.4px;text-decoration:none;border-left:3px solid transparent}
@@ -293,8 +293,8 @@ img.avatar{border:1px solid var(--line)}
 <div class="pbar" role="region" aria-label="Prototype controls">
   <div class="grp"><span class="lbl">Viewer</span>
     <div class="seg" data-key="viewer">
-      <button type="button" data-v="public" aria-pressed="true">Logged out (www)</button>
-      <button type="button" data-v="app" aria-pressed="false">Logged in (app)</button>
+      <button type="button" data-v="public" aria-pressed="true">Logged out</button>
+      <button type="button" data-v="app" aria-pressed="false">Logged in</button>
     </div>
   </div>
   <div class="grp"><span class="lbl">Profile</span>
