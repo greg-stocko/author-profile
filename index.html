@@ -171,7 +171,7 @@ img.avatar{border:1px solid var(--line)}
 .ed-top-acts{margin-left:auto;display:flex;gap:12px}
 .ed-title h1{margin:0;font-size:32px;line-height:40px}
 .ed{max-width:1250px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.75fr);gap:24px;align-items:start}
-.ed .card{max-width:none}
+.ed .card{max-width:none;margin:0}
 .ed-side .card{padding:24px}
 .ed-side .card+.card{margin-top:24px}
 .ed h2{margin:0 0 16px;font-size:20px;line-height:28px}
@@ -180,7 +180,7 @@ img.avatar{border:1px solid var(--line)}
 .dp .avatar.initials{font-size:48px}
 .dp .cam{position:absolute;right:6px;bottom:6px;width:36px;height:36px;border-radius:50%;background:var(--ink-2);color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
 .dp .cam .msym{font-size:18px}
-.plink{word-break:break-all;font-size:15px}
+.plink{overflow-wrap:anywhere;font-size:15px}
 .form{padding:24px 24px 8px}
 .fld{margin-bottom:24px;position:relative}
 .fld label,.fld .lab{display:block;font-size:15px;line-height:22px;font-weight:700;margin-bottom:4px}
@@ -287,6 +287,14 @@ img.avatar{border:1px solid var(--line)}
 .v2.is-former .pcard .id{background:linear-gradient(var(--line-light) 0 var(--band), #fff var(--band))}
 .ccard .sec.sec-sub h2{margin:0 0 4px}
 .is-mobile .dp .avatar,.is-mobile .dp .avatar.initials{width:160px;height:160px;font-size:48px}
+.es-quiet{margin:0;font-size:15px;line-height:24px;color:var(--text-secondary)}
+.es-quiet+.es-quiet{margin-top:4px}
+.es-feed{padding:20px 0 4px}
+.empty-own{border:1px dashed var(--steel-dark,#B8C1D8);border-radius:8px;background:var(--bg-light);padding:24px;max-width:744px}
+.empty-own .es-title{margin:0 0 4px;font-size:17px;line-height:26px;font-weight:700;color:var(--ink)}
+.empty-own p{margin:0;font-size:15px;line-height:24px;color:var(--ink-2)}
+.empty-own .es-note{margin-top:8px;font-size:13px;line-height:20px;color:var(--text-secondary)}
+.es-btn{margin-top:16px}
 </style>
 </head>
 <body>
@@ -304,6 +312,7 @@ img.avatar{border:1px solid var(--line)}
       <button type="button" data-v="sub" aria-pressed="false">Subscriber</button>
       <button type="button" data-v="former" aria-pressed="false">Former staff</button>
       <button type="button" data-v="own" aria-pressed="false">My profile</button>
+      <button type="button" data-v="empty" aria-pressed="false">Empty</button>
     </div>
   </div>
   <div class="grp"><span class="lbl">Page</span>
@@ -389,6 +398,8 @@ var PROFILES = {
   }
 };
 PROFILES.own = Object.assign({}, PROFILES.sub, {own:true});
+PROFILES.empty = { name:'Rachel M', first:'Rachel', staff:false, photo:'', occupation:'', joined:'Nov 2026', posts:0, comments:0,
+  links:{ x:'', linkedin:'', url:'' }, about:'', strategy:'', feed:[] };
 
 /* ---------- Sample data padding so batches of 10 can be shown ---------- */
 (function(){
@@ -414,6 +425,11 @@ PROFILES.own = Object.assign({}, PROFILES.sub, {own:true});
   weekdays(new Date(2026,9,22), 16).forEach(function(d,i){
     sub.push({k:'comment', date:D[d.getDay()]+' '+d.getDate()+' '+M[d.getMonth()], on:'re: Daily Stock Market Report ('+D[d.getDay()]+' '+ord(d.getDate())+' '+M[d.getMonth()]+' 2026)', text:CM[(i+1)%CM.length]});
   });
+  sub.push(
+    {k:'post', kind:'Discussion', date:'Tue 15 Sep', title:'Reading the cash flow statement before the income statement', ex:'A habit I picked up a few years ago that has kept me out of a couple of value traps.', c:31},
+    {k:'post', kind:'Discussion', date:'Wed 2 Sep', title:'ISA or SIPP first for a new small-cap holding?', ex:'Curious how others decide which wrapper a new position goes into.', c:18},
+    {k:'post', kind:'Discussion', date:'Mon 10 Aug', title:'Using the StockRanks as a starting point, not a verdict', ex:'How I use the ranks to build a shortlist and then do the reading myself.', c:42}
+  );
   var fm = PROFILES.former.feed;
   var SCVR = [
     ['Mon 4 Nov 2024','Small Cap Value Report (Mon 4 Nov 2024) - DPP, ZTF, VNET Briefs: PCIP, FDBK','Good morning from Paul & Graham! Another key week for global markets, with the US election for us to focus on, or completely ignore, whichever you prefer.'],
@@ -434,7 +450,7 @@ PROFILES.own = Object.assign({}, PROFILES.sub, {own:true});
   });
 })();
 
-var STATE = { viewer:'public', profile:'staff', device:'desktop', filter:null, shown:10, page:'profile', notes:'on' };
+var STATE = { viewer:'public', profile:'staff', device:'desktop', filter:null, shown:10, page:'profile', notes:'on', emptyView:'me' };
 var BATCH = 10;
 
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
@@ -460,7 +476,8 @@ function feedHTML(p){
   var items = p.feed.filter(function(it){ return f === 'all' || (f === 'posts' ? it.k === 'post' : it.k === 'comment'); });
   var noun = f === 'posts' ? 'posts' : f === 'comments' ? 'comments' : '';
   if (!items.length) return '<p class="empty">No '+(noun || 'activity')+' yet.</p>';
-  var shown = items.slice(0, STATE.shown), left = items.length - shown.length;
+  var total = f === 'posts' ? p.posts : f === 'comments' ? p.comments : (p.posts||0) + (p.comments||0);
+  var shown = items.slice(0, STATE.shown), left = Math.max(items.length, total||0) - shown.length;
   var html = '<ul class="feed" id="feed">'+shown.map(function(it, i){
     var first = i === STATE.shown - BATCH && i > 0 ? ' tabindex="-1" data-first-new' : '';
     if (it.k === 'post') {
@@ -505,7 +522,20 @@ function stdHTML(p){
     '<li><a href="#"><span class="msym" aria-hidden="true">edit_note</span>Corrections and clarifications<span class="msym go" aria-hidden="true">chevron_right</span></a></li></ul></div>';
   return std;
 }
+function aboutBody(p){
+  if (p.about || p.strategy) return '<div class="prose">'+(p.about || '')+'</div>';
+  if (p.own) return '<div class="empty-own"><p class="es-title">Tell the community about yourself</p>'+
+    '<p>Add a short introduction, how you invest and where people can find you. <a href="#" data-go="edit">Edit your profile</a> to get started.</p>'+
+    '<p class="es-note">Your profile is only visible to other Stockopedia subscribers.</p></div>';
+  return '<p class="es-quiet">No details added yet.</p>';
+}
 function latestHTML(p){
+  if (!p.feed.length && p.posts + p.comments === 0) {
+    var msg = p.own
+      ? '<p class="es-quiet">Your posts and comments will appear here. Ask a question or share an idea with other subscribers in Discuss.</p><a class="btn btn-blue es-btn" href="#">Create post</a>'
+      : '<p class="es-quiet">No posts or comments yet.</p>';
+    return '<section class="sec" id="latest"><div class="lh"><h2>Latest from '+esc(p.first)+'</h2></div><div class="es-feed">'+msg+'</div></section>';
+  }
   return '<section class="sec" id="latest"><div class="lh"><h2>Latest from '+esc(p.first)+'</h2>'+filtersHTML(p)+'</div>'+feedHTML(p)+'</section>';
 }
 function profileHTML(p){
@@ -516,14 +546,14 @@ function profileHTML(p){
     '<aside class="lcol" aria-label="Profile"><div class="lcol-in"><div class="wcard pcard">'+
       '<div class="id">'+avatarHTML(p)+'<h1 class="ph-name"><span>'+esc(p.name)+'</span>'+badgeHTML(p)+'</h1>'+
         (p.occupation ? '<div class="occ">'+esc(p.occupation)+'</div>' : '')+flag+
-        '<div class="facts"><div>Joined '+esc(p.joined)+'</div><div><a href="#latest" data-jump="posts">'+num(p.posts)+' posts</a><span class="dot" aria-hidden="true">·</span><a href="#latest" data-jump="comments">'+num(p.comments)+' comments</a></div></div>'+
+        '<div class="facts"><div>Joined '+esc(p.joined)+'</div><div>'+(p.posts + p.comments === 0 ? 'No posts or comments yet' : '<a href="#latest" data-jump="posts">'+num(p.posts)+' posts</a><span class="dot" aria-hidden="true">·</span><a href="#latest" data-jump="comments">'+num(p.comments)+' comments</a>')+'</div></div>'+
         socialHTML(p)+edit+'</div>'+
       '<nav class="toc" aria-label="On this page">'+
         '<a href="#about" data-toc="about" class="on"><span class="msym" aria-hidden="true">person</span>About</a>'+
         '<a href="#latest" data-toc="latest"><span class="msym" aria-hidden="true">feed</span>Latest from '+esc(p.first)+'</a>'+
       '</nav></div></div></aside>'+
     '<div class="main">'+
-      '<div class="wcard ccard acard"><section class="sec" id="about"><h2>About</h2><div class="prose">'+p.about+'</div></section>'+
+      '<div class="wcard ccard acard"><section class="sec" id="about"><h2>About</h2>'+aboutBody(p)+'</section>'+
         (p.strategy ? '<section class="sec sec-sub"><h2>Investment strategy</h2><div class="prose">'+p.strategy+'</div></section>' : '')+'</div>'+
       '<div class="wcard ccard lcard">'+latestHTML(p)+'</div>'+
       (p.staff ? '<div class="wcard stdcard">'+stdHTML(p)+'</div>' : '')+
@@ -558,13 +588,14 @@ function editHTML(p){
   var tb2 = tb;
   var slug = p.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-$/,'');
   var side = '<div class="ed-side"><div class="card"><h2>Display picture</h2><div class="dp">'+avatarHTML(p)+'<span class="cam"><span class="msym" aria-hidden="true">photo_camera</span></span></div></div>'+
-    '<div class="card"><h2>Link to profile</h2><a class="plink" href="#">https://www.stockopedia.com/contributors/'+slug+'-145972</a></div>'+
+    '<div class="card"><h2>Link to profile</h2><a class="plink" href="#">https://www.stockopedia.com/contributors/<wbr>'+slug+'-145972</a></div>'+
     '<div class="card devnotes"><h2><span class="msym" aria-hidden="true">construction</span>Data and backend changes</h2><ol>'+
       '<li><b>Interests field removed</b>One-off migration: where Interests is not empty, append <code>&lt;p&gt;&lt;strong&gt;Interests:&lt;/strong&gt; {value}&lt;/p&gt;</code> to the end of About me, then drop the field. Highlighted in the About me example.</li>'+
       '<li><b>Social links</b>Twitter becomes X: same stored username, relabel only. Facebook: remove from the form and profile (stored values can be left or dropped). New Website field: one URL per profile, validated, https only.</li>'+
       '<li><b>Allowed formatting</b>About me and Investment strategy share the same controls and accept paragraphs, one heading level (shown as \u201cLarge\u201d), bold, italic, links and bulleted lists. Existing bios are not migrated: old headings, images and tables still render.</li>'+
       '<li><b>No role differences in the form</b>Same fields for staff and subscribers. The staff flag stays admin-only and drives the badge, the editorial standards box and the default Latest filter.</li>'+
       '<li><b>Subscriber profiles</b>noindex on all non-staff profiles. Logged-out requests redirect to login, then return to the profile. Staff profiles stay public and indexable.</li>'+
+      '<li><b>Remove the Alerts link</b>Own profile currently has an Alerts tab linking to <code>/alert</code> (My Alerts). Remove it from the profile; alerts stay reachable from the notifications bell.</li>'+
     '</ol></div></div>';
   var form = '<div class="card"><div class="form">'+
     '<div class="fld"><label for="f-name">Profile name</label><p class="help">Shown publicly next to your posts and comments.</p><input id="f-name" class="inp" value="'+esc(p.name)+'"></div>'+
@@ -606,12 +637,17 @@ function appShell(inner){
       return '<a href="#" class="'+(n[0]==='discuss' ? 'on' : '')+'"><span class="msym" aria-hidden="true">'+n[2]+'</span>'+n[1].toUpperCase()+'</a>';
     }).join('')+'</nav><div class="app-main"><div class="app-top"><a class="logo" href="#">'+LOGOMARK+'<span>Stock<b>opedia</b></span></a>'+
     '<div class="pub-search"><span class="msym" aria-hidden="true">search</span>Search over 60,000 stocks</div>'+
-    '<div class="right"><span class="uk">UK focus</span><span class="msym" aria-hidden="true">notifications</span><span class="me">SR</span></div></div>'+
+    '<div class="right"><span class="uk">UK focus</span><span class="msym" aria-hidden="true">notifications</span><span class="me">'+(window.ME||'SR')+'</span></div></div>'+
     '<main class="page">'+inner+'</main></div></div>';
 }
 
 function render(){
   var p = PROFILES[STATE.profile];
+  if (STATE.profile === 'empty') {
+    p = Object.assign({}, PROFILES.empty, {own: STATE.emptyView === 'me'});
+    if (p.own) STATE.viewer = 'app';
+  }
+  window.ME = (p.own ? initials(p.name) : 'SR');
   // Your own profile only exists logged in
   if (STATE.profile === 'own' && STATE.viewer !== 'app') STATE.viewer = 'app';
   if (STATE.filter === null) STATE.filter = p.staff ? 'posts' : 'all';
@@ -631,6 +667,7 @@ function render(){
     '<span class="tag-meta">Latest default: <b>'+(p.staff ? 'Posts' : 'All')+'</b></span>'
   ];
   if (gated) notes.push('<span>Logged-out click on a subscriber’s name → login, then back to '+esc(url)+'</span>');
+  if (STATE.profile === 'empty') notes.push('<span class="grp"><span class="lbl">Viewed by</span><span class="seg" data-key="emptyView"><button type="button" data-v="me" aria-pressed="'+(STATE.emptyView==='me')+'">Rachel (own profile)</button><button type="button" data-v="other" aria-pressed="'+(STATE.emptyView==='other')+'">Another member</button></span></span>');
   if (STATE.profile === 'own') notes.push('<span>Your own profile is always viewed logged in – only difference is the Edit button</span>');
   if (STATE.page === 'edit') notes = ['<span>Edit profile: same form for staff and subscribers. Toggle Dev notes to hide the annotations.</span>'];
   document.getElementById('pnote').innerHTML = notes.join('');
@@ -651,6 +688,7 @@ document.querySelector('.pbar').addEventListener('click', function(e){
   STATE.shown = BATCH;
   if (k === 'viewer' && STATE.viewer === 'public' && STATE.profile === 'own') STATE.profile = 'sub';
   if (k === 'viewer' && STATE.viewer === 'public') STATE.page = 'profile';
+  if (k === 'viewer' && STATE.viewer === 'public' && STATE.profile === 'empty') STATE.emptyView = 'other';
   render();
 });
 
