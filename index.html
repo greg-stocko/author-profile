@@ -234,7 +234,8 @@ img.avatar{border:1px solid var(--line)}
 .wcard{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(41,49,64,.08)}
 .wcard+.wcard{margin-top:24px}
 .lcol-in{position:sticky;top:calc(var(--stick,0px) + 24px)}
-.pcard{overflow:hidden}
+/* no overflow:hidden: it clipped the staff badge tooltip. Round the band instead */
+.pcard .id{border-radius:8px 8px 0 0}
 .pcard .id{--band:80px;padding:24px 24px 24px;text-align:center;background:linear-gradient(var(--blue-light) 0 var(--band), #fff var(--band))}
 .v2 .id .avatar{display:block;margin:0 auto;width:112px;height:112px}
 .v2 .pcard img.avatar{border:4px solid #fff;box-shadow:0 1px 4px rgba(41,49,64,.18)}
@@ -242,19 +243,15 @@ img.avatar{border:1px solid var(--line)}
 .v2 .id .occ{margin-top:4px}
 .v2 .facts{margin-top:10px;color:var(--text-secondary);font-size:13px;line-height:20px;font-variant-numeric:tabular-nums}
 .v2 .facts .dot{margin:0 8px;color:var(--text-tertiary)}
+.v2 .facts .counts{margin-top:8px;font-size:15px;line-height:24px}
+.v2 .facts .counts .dot{margin:0 10px}
+.v2 .pcard .facts + .social{margin-top:20px}
 .v2 .pcard .social{justify-content:center}
-.toc{display:flex;flex-direction:column;border-top:1px solid var(--line-light);padding:8px 0}
-.toc a{display:flex;align-items:center;gap:10px;height:44px;padding:0 24px 0 21px;border-left:3px solid transparent;color:var(--ink-2);font-size:15px;line-height:22px}
-.toc a .msym{font-size:20px;color:var(--ink-4)}
-.toc a:hover{text-decoration:none;background:var(--bg-light);color:var(--ink)}
-.toc a.on{border-left-color:var(--blue);background:var(--blue-faint);color:var(--blue-dark);font-weight:700}
-.toc a.on .msym{color:var(--blue)}
 .ccard{padding:32px 40px 40px}
 .ccard .sec h2,.ccard > h2{margin:0 0 16px}
 .ccard .lh h2{margin:0}
 .v2 .lh{margin:-12px -40px 0;padding:12px 40px}
 .v2 .lh.stuck{border-radius:0}
-#about h2{scroll-margin-top:calc(var(--stick,0px) + 56px)}
 .v2 #latest h2{scroll-margin-top:calc(var(--stick,0px) + 56px)}
 .stdcard{padding:28px 40px}
 .stdcard .box-std{max-width:744px}
@@ -272,12 +269,15 @@ img.avatar{border:1px solid var(--line)}
 .is-mobile .v2 .acard{order:2}
 .is-mobile .v2 .lcard{order:3}
 .is-mobile .v2 .stdcard{order:4}
-.is-mobile .v2 .toc{display:none}
 .is-mobile .pcard .id{--band:72px;padding:24px 16px}
 .is-mobile .v2 .id .avatar{width:96px;height:96px}
 .is-mobile .v2 .ph-name{font-size:24px;line-height:32px}
 .is-mobile .ccard{padding:24px 16px 32px}
 .is-mobile .v2 .lh{margin:-12px -16px 0;padding:12px 16px}
+/* Latest header: equal space above and below; header sits at the card top */
+.v2 .lcard{padding-top:0}
+.v2 .lcard .lh{margin-top:0;padding-top:16px;padding-bottom:16px;border-radius:8px 8px 0 0}
+.v2 .lcard .lh.stuck{border-radius:0}
 .is-mobile .stdcard{padding:24px 16px}
 .is-mobile .stdcard ul{flex-direction:column;gap:12px}
 .v2 .pcard .avatar.initials{display:flex;margin:0 auto;border:4px solid #fff;background:var(--blue-faint);box-shadow:0 1px 4px rgba(41,49,64,.18);font-size:36px}
@@ -547,12 +547,9 @@ function profileHTML(p){
     '<aside class="lcol" aria-label="Profile"><div class="lcol-in"><div class="wcard pcard">'+
       '<div class="id">'+avatarHTML(p)+'<h1 class="ph-name"><span>'+esc(p.name)+'</span>'+badgeHTML(p)+'</h1>'+
         (p.occupation ? '<div class="occ">'+esc(p.occupation)+'</div>' : '')+flag+
-        '<div class="facts"><div>Joined '+esc(p.joined)+'</div><div>'+(p.posts + p.comments === 0 ? 'No posts or comments yet' : '<a href="#latest" data-jump="posts">'+num(p.posts)+' posts</a><span class="dot" aria-hidden="true">·</span><a href="#latest" data-jump="comments">'+num(p.comments)+' comments</a>')+'</div></div>'+
+        '<div class="facts"><div>Joined '+esc(p.joined)+'</div><div class="counts">'+(p.posts + p.comments === 0 ? 'No posts or comments yet' : '<a href="#latest" data-jump="posts">'+num(p.posts)+' posts</a><span class="dot" aria-hidden="true">·</span><a href="#latest" data-jump="comments">'+num(p.comments)+' comments</a>')+'</div></div>'+
         socialHTML(p)+edit+'</div>'+
-      '<nav class="toc" aria-label="On this page">'+
-        '<a href="#about" data-toc="about" class="on"><span class="msym" aria-hidden="true">person</span>About</a>'+
-        '<a href="#latest" data-toc="latest"><span class="msym" aria-hidden="true">feed</span>Latest from '+esc(p.first)+'</a>'+
-      '</nav></div></div></aside>'+
+      '</div></div></aside>'+
     '<div class="main">'+
       '<div class="wcard ccard acard"><section class="sec" id="about"><h2>About</h2>'+aboutBody(p)+'</section>'+
         (p.strategy ? '<section class="sec sec-sub"><h2>Investment strategy</h2><div class="prose">'+p.strategy+'</div></section>' : '')+'</div>'+
@@ -561,19 +558,6 @@ function profileHTML(p){
     '</div></div>';
 }
 
-function spy(){
-  var top = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--stick')) || 0) + 80;
-  var lat = document.getElementById('latest'); if (!lat) return;
-  var cur = lat.getBoundingClientRect().top <= top ? 'latest' : 'about';
-  document.querySelectorAll('.toc a').forEach(function(a){ var on = a.getAttribute('data-toc') === cur; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current','location'); else a.removeAttribute('aria-current'); });
-}
-window.addEventListener('scroll', spy, {passive:true});
-document.addEventListener('click', function(e){
-  var t = e.target.closest('.toc a'); if (!t) return;
-  e.preventDefault();
-  var h = document.querySelector('#'+t.getAttribute('data-toc')+' h2');
-  if (h) { h.setAttribute('tabindex','-1'); h.scrollIntoView({behavior:'smooth', block:'start'}); h.focus({preventScroll:true}); }
-});
 
 
 function editHTML(p){
